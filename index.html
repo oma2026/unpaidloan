@@ -132,24 +132,13 @@
   </section>
 </main>
 
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
-  import {
-    getFirestore, collection, addDoc, serverTimestamp
-  } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyBsmWkWrUmL-HmcfF92JFxzbsFWpk3UGx0",
-    authDomain: "daikuanweihuan.firebaseapp.com",
-    projectId: "daikuanweihuan",
-    storageBucket: "daikuanweihuan.firebasestorage.app",
-    messagingSenderId: "243224865653",
-    appId: "1:243224865653:web:6bfccdee107680393d813c",
-    measurementId: "G-3WYJ18TLLK"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script>
+  // 送出後會自動把每日紀錄寄到公司信箱（透過 EmailJS）。
+  // ↓↓↓ 這三行貼上你的 EmailJS 資料（在 emailjs.com 取得）
+  const EMAILJS_PUBLIC_KEY  = "e4kvPNloiNIqVpDTn";
+  const EMAILJS_SERVICE_ID  = "service_vqssoyd";
+  const EMAILJS_TEMPLATE_ID = "template_i49znpo";
 
   const LAST_MILEAGE_KEY = "oma_driver_last_mileage_cloud_v1";
   const el = id => document.getElementById(id);
@@ -241,8 +230,7 @@
       toll,
       otherExpense,
       companyAmount,
-      note: el("note").value.trim(),
-      createdAt: serverTimestamp()
+      note: el("note").value.trim()
     };
 
     const btn = el("submitBtn");
@@ -251,17 +239,43 @@
     el("status").className = "status";
 
     try{
-      await addDoc(collection(db, "driverRecords"), data);
+      if (EMAILJS_PUBLIC_KEY.startsWith("在這裡")){
+        throw new Error("尚未設定 EmailJS 資料");
+      }
+
+      const message =
+        `日期：${data.date}\n` +
+        `上次累積公里數：${previousMileage}\n` +
+        `本次累積公里數：${currentMileage}\n` +
+        `今日行駛公里數：${distance}\n` +
+        `今日車資收入：${money.format(income)}\n` +
+        `其他收入：${money.format(otherIncome)}\n` +
+        `司機費30%：${money.format(driverFee)}\n` +
+        `油資：${money.format(fuel)}\n` +
+        `過路費：${money.format(toll)}\n` +
+        `其他支出：${money.format(otherExpense)}\n` +
+        `今日應繳回公司：${money.format(companyAmount)}\n` +
+        `備註：${data.note || "(無)"}`;
+
+      const templateParams = {
+        subject: `司機每日營運紀錄 ${data.date}`,
+        message
+      };
+
+      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams, {
+        publicKey: EMAILJS_PUBLIC_KEY
+      });
+
       localStorage.setItem(LAST_MILEAGE_KEY, String(currentMileage));
 
-      showStatus("送出成功，公司已收到這筆資料。", "success");
+      showStatus("送出成功，公司信箱已收到這筆紀錄。", "success");
       el("lastResult").innerHTML =
         `<strong>${data.date}</strong>｜今日 ${distance.toLocaleString()} 公里｜應繳公司 <strong>${money.format(companyAmount)}</strong>`;
 
       clearEntry(true);
     }catch(error){
       console.error(error);
-      showStatus("送出失敗，請確認網路或 Firestore 規則後再試一次。", "error");
+      showStatus("送出失敗，請確認網路後再試一次。", "error");
     }finally{
       btn.disabled = false;
       btn.textContent = "送出至公司";
