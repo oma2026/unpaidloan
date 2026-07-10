@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>九歐司機每日營運紀錄</title>
+  <style>
+    :root{
+      --bg:#f4f7fb;--card:#fff;--text:#142238;--muted:#718096;
+      --blue:#1f5fae;--blue2:#103f79;--line:#dfe6ef;
+      --green:#0b8a5d;--red:#c0392b;--shadow:0 18px 50px rgba(25,55,95,.11)
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC",sans-serif;
+      color:var(--text);background:radial-gradient(circle at top left,#e7f2ff 0,transparent 36%),var(--bg);
+      min-height:100vh
+    }
+    .wrap{max-width:920px;margin:auto;padding:30px 16px 60px}
+    header{display:flex;justify-content:space-between;gap:18px;align-items:flex-end;margin-bottom:22px}
+    h1{margin:0;font-size:clamp(28px,5vw,42px);letter-spacing:-.04em}
+    header p{margin:7px 0 0;color:var(--muted)}
+    .badge{padding:8px 13px;border:1px solid #bdd3ed;border-radius:999px;color:var(--blue2);white-space:nowrap}
+    .card{background:rgba(255,255,255,.95);border-radius:22px;padding:24px;box-shadow:var(--shadow)}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}
+    .full{grid-column:1/-1}
+    label{display:block;margin-bottom:7px;color:var(--muted);font-size:14px}
+    input,button{width:100%;padding:13px 14px;border-radius:12px;font-size:16px}
+    input{border:1px solid var(--line);background:#fff;color:var(--text)}
+    input:focus{outline:2px solid #bddbff;border-color:var(--blue)}
+    input[readonly]{background:#f2f5f9;font-weight:700}
+    .summary{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:20px}
+    .box{padding:15px;background:#f6f8fb;border:1px solid var(--line);border-radius:15px}
+    .box span{display:block;color:var(--muted);font-size:13px;margin-bottom:5px}
+    .box strong{font-size:22px}
+    .company{grid-column:1/-1;background:#eefaf5;border-color:#ccecdf}
+    .company strong{color:var(--green);font-size:29px}
+    .hint{margin-top:14px;color:var(--muted);font-size:13px;line-height:1.65}
+    .actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}
+    button{border:0;font-weight:750;cursor:pointer}
+    .primary{background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff}
+    .secondary{background:#eaf2fb;color:var(--blue2)}
+    button:disabled{opacity:.55;cursor:not-allowed}
+    .status{display:none;margin-top:15px;padding:13px 15px;border-radius:12px;font-size:14px}
+    .success{display:block;background:#eaf9f2;color:#08764f;border:1px solid #c7eadb}
+    .error{display:block;background:#fff0ee;color:var(--red);border:1px solid #f3ccc7}
+    .last{margin-top:18px;padding:14px;border:1px dashed #c8d4e3;border-radius:13px;color:var(--muted);font-size:14px}
+    @media(max-width:620px){
+      header{align-items:flex-start;flex-direction:column}
+      .grid,.summary,.actions{grid-template-columns:1fr}
+      .full,.company{grid-column:auto}
+      .card{padding:18px}
+    }
+  </style>
+</head>
+<body>
+<main class="wrap">
+  <header>
+    <div>
+      <h1>司機每日營運紀錄</h1>
+      <p>資料送出後會直接儲存至公司雲端。</p>
+    </div>
+    <div class="badge">九歐旅行家</div>
+  </header>
+
+  <section class="card">
+    <form id="form">
+      <div class="grid">
+        <div>
+          <label for="date">日期</label>
+          <input id="date" type="date" required>
+        </div>
+        <div>
+          <label for="previousMileage">上次累積公里數</label>
+          <input id="previousMileage" type="number" min="0" step="1" required>
+        </div>
+        <div>
+          <label for="currentMileage">本次累積公里數</label>
+          <input id="currentMileage" type="number" min="0" step="1" placeholder="例如 38,520" required>
+        </div>
+        <div>
+          <label for="distance">今日行駛公里數</label>
+          <input id="distance" type="number" readonly>
+        </div>
+        <div>
+          <label for="income">今日車資收入</label>
+          <input id="income" type="number" min="0" step="1" required placeholder="NT$">
+        </div>
+        <div>
+          <label for="otherIncome">其他收入</label>
+          <input id="otherIncome" type="number" min="0" step="1" value="0">
+        </div>
+        <div>
+          <label for="fuel">油資</label>
+          <input id="fuel" type="number" min="0" step="1" value="0">
+        </div>
+        <div>
+          <label for="toll">過路費</label>
+          <input id="toll" type="number" min="0" step="1" value="0">
+        </div>
+        <div>
+          <label for="otherExpense">其他支出</label>
+          <input id="otherExpense" type="number" min="0" step="1" value="0">
+        </div>
+        <div>
+          <label for="note">備註</label>
+          <input id="note" type="text" maxlength="100" placeholder="例如停車費、洗車費">
+        </div>
+      </div>
+
+      <div class="summary">
+        <div class="box"><span>車資收入</span><strong id="sIncome">NT$ 0</strong></div>
+        <div class="box"><span>其他收入</span><strong id="sOtherIncome">NT$ 0</strong></div>
+        <div class="box"><span>司機費 30%</span><strong id="sDriver">NT$ 0</strong></div>
+        <div class="box"><span>油資＋過路費＋其他支出</span><strong id="sCosts">NT$ 0</strong></div>
+        <div class="box company"><span>今日應繳回公司</span><strong id="sCompany">NT$ 0</strong></div>
+      </div>
+
+      <div class="hint">
+        應繳回公司＝車資收入＋其他收入－司機費30%－油資－過路費－其他支出。
+        上次里程會記在這台手機的瀏覽器中，送出成功後自動帶到下一次。
+      </div>
+
+      <div class="actions">
+        <button class="primary" id="submitBtn" type="submit">送出至公司</button>
+        <button class="secondary" id="resetBtn" type="button">清除本次輸入</button>
+      </div>
+
+      <div id="status" class="status"></div>
+      <div id="lastResult" class="last">尚未送出今日紀錄。</div>
+    </form>
+  </section>
+</main>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
+  import {
+    getFirestore, collection, addDoc, serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBsmWkWrUmL-HmcfF92JFxzbsFWpk3UGx0",
+    authDomain: "daikuanweihuan.firebaseapp.com",
+    projectId: "daikuanweihuan",
+    storageBucket: "daikuanweihuan.firebasestorage.app",
+    messagingSenderId: "243224865653",
+    appId: "1:243224865653:web:6bfccdee107680393d813c",
+    measurementId: "G-3WYJ18TLLK"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  const LAST_MILEAGE_KEY = "oma_driver_last_mileage_cloud_v1";
+  const el = id => document.getElementById(id);
+  const money = new Intl.NumberFormat("zh-TW", {
+    style:"currency", currency:"TWD", maximumFractionDigits:0
+  });
+
+  function todayISO(){
+    const d = new Date();
+    return new Date(d.getTime() - d.getTimezoneOffset()*60000).toISOString().slice(0,10);
+  }
+
+  function n(id){ return Number(el(id).value || 0); }
+
+  function calculate(){
+    const prev = n("previousMileage");
+    const current = n("currentMileage");
+    const distance = current ? current - prev : 0;
+    el("distance").value = distance >= 0 ? distance : 0;
+
+    const income = n("income");
+    const otherIncome = n("otherIncome");
+    const driverFee = Math.round(income * 0.30);
+    const costs = n("fuel") + n("toll") + n("otherExpense");
+    const companyAmount = income + otherIncome - driverFee - costs;
+
+    el("sIncome").textContent = money.format(income);
+    el("sOtherIncome").textContent = money.format(otherIncome);
+    el("sDriver").textContent = money.format(driverFee);
+    el("sCosts").textContent = money.format(costs);
+    el("sCompany").textContent = money.format(companyAmount);
+  }
+
+  function showStatus(message, type){
+    const s = el("status");
+    s.textContent = message;
+    s.className = "status " + type;
+  }
+
+  function clearEntry(keepMileage=true){
+    const last = keepMileage ? localStorage.getItem(LAST_MILEAGE_KEY) || "" : "";
+    el("form").reset();
+    el("date").value = todayISO();
+    el("previousMileage").value = last;
+    el("otherIncome").value = 0;
+    el("fuel").value = 0;
+    el("toll").value = 0;
+    el("otherExpense").value = 0;
+    calculate();
+  }
+
+  ["previousMileage","currentMileage","income","otherIncome","fuel","toll","otherExpense"]
+    .forEach(id => el(id).addEventListener("input", calculate));
+
+  el("resetBtn").addEventListener("click", () => {
+    clearEntry(true);
+    el("status").className = "status";
+  });
+
+  el("form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const previousMileage = n("previousMileage");
+    const currentMileage = n("currentMileage");
+
+    if (currentMileage < previousMileage){
+      showStatus("本次累積公里數不能小於上次累積公里數。", "error");
+      return;
+    }
+
+    const income = n("income");
+    const otherIncome = n("otherIncome");
+    const fuel = n("fuel");
+    const toll = n("toll");
+    const otherExpense = n("otherExpense");
+    const driverFee = Math.round(income * 0.30);
+    const distance = currentMileage - previousMileage;
+    const companyAmount = income + otherIncome - driverFee - fuel - toll - otherExpense;
+
+    const data = {
+      date: el("date").value,
+      previousMileage,
+      currentMileage,
+      distance,
+      income,
+      otherIncome,
+      driverFee,
+      fuel,
+      toll,
+      otherExpense,
+      companyAmount,
+      note: el("note").value.trim(),
+      createdAt: serverTimestamp()
+    };
+
+    const btn = el("submitBtn");
+    btn.disabled = true;
+    btn.textContent = "送出中…";
+    el("status").className = "status";
+
+    try{
+      await addDoc(collection(db, "driverRecords"), data);
+      localStorage.setItem(LAST_MILEAGE_KEY, String(currentMileage));
+
+      showStatus("送出成功，公司已收到這筆資料。", "success");
+      el("lastResult").innerHTML =
+        `<strong>${data.date}</strong>｜今日 ${distance.toLocaleString()} 公里｜應繳公司 <strong>${money.format(companyAmount)}</strong>`;
+
+      clearEntry(true);
+    }catch(error){
+      console.error(error);
+      showStatus("送出失敗，請確認網路或 Firestore 規則後再試一次。", "error");
+    }finally{
+      btn.disabled = false;
+      btn.textContent = "送出至公司";
+    }
+  });
+
+  el("date").value = todayISO();
+  el("previousMileage").value = localStorage.getItem(LAST_MILEAGE_KEY) || "";
+  calculate();
+</script>
+</body>
+</html>
